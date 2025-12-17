@@ -34,8 +34,9 @@ export interface LevelConfig {
 }
 
 export enum GameState {
-  MENU = 'MENU',
-  MAP = 'MAP',
+  START_SCREEN = 'START_SCREEN',
+  MENU = 'MENU', // Map
+  MAP = 'MAP',   // Alias for MENU logic
   PLAYING = 'PLAYING',
   PAUSED = 'PAUSED',
   WON = 'WON',
@@ -45,4 +46,6 @@ export enum GameState {
 export interface PlayerProgress {
   unlockedLevel: number; // Max level reached
   stars: Record<number, number>; // Level number -> Stars earned
+  lives: number;
+  lastLifeUpdate: number;
 }

@@ -17,7 +17,7 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
   // Game Logic State
   const [movesLeft, setMovesLeft] = useState(levelConfig.moveLimit);
   const [isProcessingMatch, setIsProcessingMatch] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false); // Prevents rapid clicking
+  // REMOVED: isAnimating (blocked input), replacing with simple visual logic only
   const [matchedType, setMatchedType] = useState<ItemType | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
@@ -36,13 +36,14 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
        // Allow a small delay for user to realize what happened or for matches to clear
        const timeout = setTimeout(() => {
          // Double check we didn't just win or clear space
-         if (movesLeft <= 0 && tray.length > 0) {
+         // If tray is full, game over. If moves are 0, game over.
+         if (tray.length > MAX_TRAY_SIZE || (movesLeft <= 0 && items.length > 0)) {
             onGameOver(false, 0);
          }
        }, 500);
        return () => clearTimeout(timeout);
     }
-  }, [movesLeft, tray.length, isInitialized, isProcessingMatch, onGameOver]);
+  }, [movesLeft, tray.length, isInitialized, isProcessingMatch, onGameOver, items.length]);
 
   const generateLevel = () => {
     const newItems: GameItem[] = [];
@@ -89,7 +90,6 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     setItems(newItems);
     setTray([]);
     setMovesLeft(levelConfig.moveLimit);
-    setIsAnimating(false);
     setTimeout(() => setIsInitialized(true), 100);
   };
 
@@ -105,22 +105,16 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
   };
 
   const handleItemClick = (clickedItem: GameItem) => {
-    if (isProcessingMatch) return;
-    if (isAnimating) return; // Block input while item is flying
+    // We allow clicking even if processing match, to queue items up, unless tray is absolutely full
     if (tray.length >= MAX_TRAY_SIZE) return; 
     if (isBlocked(clickedItem, items)) return; 
     if (movesLeft <= 0) return;
 
-    // Start Animation Lock
-    setIsAnimating(true);
-    setMovesLeft(prev => prev - 1);
+    setMovesLeft(prev => Math.max(0, prev - 1));
 
-    // Visual Flight Logic would go here in a complex engine. 
-    // For React, we just wait a split second to simulate travel time before allowing next click.
-    setTimeout(() => {
-        setIsAnimating(false);
-    }, 350); // 350ms delay between clicks
-
+    // Immediately move to tray state. 
+    // In a full engine, we'd spawn a flying particle. 
+    // Here we just move it. The Tray component handles entry animation.
     const newTray = [...tray, clickedItem];
     setItems(prev => prev.filter(i => i.id !== clickedItem.id));
     setTray(newTray);
@@ -138,31 +132,29 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     const foundMatchedType = Object.keys(typeCounts).find(key => typeCounts[key] >= 3) as ItemType | undefined;
 
     if (foundMatchedType) {
-      setIsProcessingMatch(true);
-      setMatchedType(foundMatchedType);
+      if (!isProcessingMatch) {
+          setIsProcessingMatch(true);
+          setMatchedType(foundMatchedType);
 
-      setTimeout(() => {
-        setTray(prev => {
-          let removedCount = 0;
-          const newTray: GameItem[] = [];
-          for (const item of prev) {
-            if (item.type === foundMatchedType && removedCount < 3) {
-              removedCount++;
-            } else {
-              newTray.push(item);
-            }
-          }
-          return newTray;
-        });
-        setIsProcessingMatch(false);
-        setMatchedType(null);
-      }, 500); 
-    } else {
-      if (tray.length >= MAX_TRAY_SIZE) {
-         // Handled in other effect
+          setTimeout(() => {
+            setTray(prev => {
+              let removedCount = 0;
+              const newTray: GameItem[] = [];
+              for (const item of prev) {
+                if (item.type === foundMatchedType && removedCount < 3) {
+                  removedCount++;
+                } else {
+                  newTray.push(item);
+                }
+              }
+              return newTray;
+            });
+            setIsProcessingMatch(false);
+            setMatchedType(null);
+          }, 400); // Faster clear for snappy feel
       }
     }
-  }, [tray]);
+  }, [tray, isProcessingMatch]);
 
   // Win Condition
   useEffect(() => {
@@ -182,12 +174,12 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#2a1b15] overflow-hidden relative font-sans">
+    <div className="flex flex-col h-full bg-[#3d271e] overflow-hidden relative font-sans">
       {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#5e382d_0%,_#1a0f0a_100%)] z-0"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_#6d4c41_0%,_#2a1b15_100%)] z-0"></div>
       
       {/* Top Bar */}
-      <div className="flex-none z-30">
+      <div className="flex-none z-30 pt-safe-top">
         <TopBar 
             level={levelConfig.levelNumber} 
             movesLeft={movesLeft}
@@ -197,35 +189,32 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
       </div>
       
       {/* Main Rack Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 py-4 px-2 scroll-smooth">
-        <div className="max-w-2xl mx-auto relative mt-2 mb-8">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 py-2 px-2 scroll-smooth">
+        <div className="max-w-2xl mx-auto relative mt-4 mb-20">
            
            {/* The Rack Container */}
-           <div className="relative bg-[#3e2415] rounded-t-[40px] rounded-b-xl p-3 md:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-x-[12px] border-t-[12px] border-[#2b170f]">
+           <div className="relative bg-[#4e342e] rounded-t-[30px] rounded-b-xl p-3 md:p-5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-x-[8px] border-t-[8px] border-[#3e2723]">
               
-              {/* Rack Header/Crown */}
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#2b170f] px-12 py-3 rounded-t-2xl border-t-4 border-[#5c3a21] shadow-2xl z-20">
-                 <div className="text-[#a67c52] font-black text-sm tracking-[0.3em] uppercase drop-shadow-sm">MARKET SHELF</div>
+              {/* Rack Header - Integrated nicely */}
+              <div className="w-full flex justify-center mb-6">
+                 <div className="bg-[#3e2723] px-6 py-1 rounded-b-lg shadow-inner border-b border-white/10">
+                    <span className="text-[#a1887f] font-bold text-xs tracking-widest uppercase">MARKET SHELF</span>
+                 </div>
               </div>
 
-              {/* Inner Shadow for depth */}
-              <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.5)] pointer-events-none rounded-t-[30px]"></div>
-
-              <div className="flex flex-col gap-6 md:gap-9 mt-4">
+              <div className="flex flex-col gap-6 md:gap-8">
                 {shelves.map(shelf => (
                   <div 
                     key={shelf.index} 
-                    className="relative w-full h-28 md:h-32"
-                    style={{ perspective: '800px' }}
+                    className="relative w-full h-24 md:h-28"
                   >
                     {/* Shelf Floor */}
-                    <div className="absolute bottom-0 w-full h-5 bg-[#5c3a21] rounded-sm shadow-[0_10px_20px_rgba(0,0,0,0.6)] z-0 flex items-center border-t border-[#8b5a36]/50">
-                         {/* Wood Texture overlay */}
-                         <div className="w-full h-full opacity-30 bg-[repeating-linear-gradient(90deg,transparent,transparent_20px,#3e2415_20px,#3e2415_21px)]"></div>
+                    <div className="absolute bottom-0 w-full h-4 bg-[#5d4037] rounded-sm shadow-[0_5px_15px_rgba(0,0,0,0.5)] z-0 flex items-center border-t border-[#8d6e63]">
+                         <div className="w-full h-full opacity-20 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]"></div>
                     </div>
 
                     {/* Items Container */}
-                    <div className="absolute bottom-4 left-0 w-full h-full flex justify-around items-end px-2 z-10 pb-2">
+                    <div className="absolute bottom-3 left-0 w-full h-full flex justify-around items-end px-2 z-10">
                       {Array.from({ length: levelConfig.slotsPerShelf }).map((_, slotIdx) => {
                           const slotItems = shelf.items.filter(i => i.slotIndex === slotIdx);
                           slotItems.sort((a, b) => a.layer - b.layer);
@@ -240,22 +229,22 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
                                   const blocked = isBlocked(item, items);
                                   const translateY = -(item.layer * 6); 
                                   const scale = 1 + (item.layer * 0.05);
-                                  // Darken blocked items
+                                  
                                   const filter = blocked 
-                                    ? 'brightness(0.4) grayscale(0.4)' 
+                                    ? 'brightness(0.5) grayscale(0.5)' 
                                     : 'brightness(1) drop-shadow(0 4px 6px rgba(0,0,0,0.3))';
                                   
-                                  const cursor = blocked || isAnimating ? 'cursor-default' : 'cursor-pointer';
+                                  const cursor = blocked ? 'cursor-default' : 'cursor-pointer';
 
                                   return (
                                     <button
                                       key={item.id}
-                                      disabled={blocked || isAnimating}
+                                      disabled={blocked}
                                       onClick={() => handleItemClick(item)}
                                       className={`
                                         absolute bottom-0 left-0 w-full h-full 
-                                        rounded-xl border-b-[6px] 
-                                        transition-all duration-300 transform
+                                        rounded-xl border-b-[5px] 
+                                        transition-all duration-200 transform
                                         flex items-center justify-center
                                         ${ITEM_COLORS[item.type]}
                                         active:scale-95
@@ -272,11 +261,11 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
                                         {ITEM_ICONS[item.type]}
                                       </span>
                                       
-                                      {/* Front Highlight/Shine */}
+                                      {/* Front Highlight */}
                                       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-lg pointer-events-none"></div>
                                       
-                                      {/* Blocked Overlay */}
-                                      {blocked && <div className="absolute inset-0 bg-black/50 rounded-lg pointer-events-none" />}
+                                      {/* Blocked Tint */}
+                                      {blocked && <div className="absolute inset-0 bg-black/40 rounded-lg pointer-events-none" />}
                                     </button>
                                   );
                               })}
@@ -291,11 +280,12 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
         </div>
       </div>
 
-      {/* Tray */}
-      <div className="flex-none w-full z-40 relative">
-          {/* Shadow casting up from tray */}
-          <div className="absolute -top-12 left-0 w-full h-12 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
-          <div className="bg-[#24130b] w-full p-2 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.7)] border-t-2 border-[#5c3a21]">
+      {/* Tray Area - Fixed at bottom */}
+      <div className="flex-none w-full z-40 relative pb-safe-bottom">
+          {/* Top shadow/gradient transition */}
+          <div className="absolute -top-10 left-0 w-full h-10 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+          
+          <div className="bg-[#3e2723] w-full p-2 pb-6 shadow-[0_-4px_20px_rgba(0,0,0,0.7)] border-t border-[#5d4037]">
              <div className="max-w-lg mx-auto">
                 <Tray items={tray} matchedType={matchedType} />
              </div>

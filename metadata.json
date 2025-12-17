@@ -1,0 +1,5 @@
+{
+  "name": "Shelf Match Master",
+  "description": "A match-3 puzzle game where you clear shelves by matching identical products. Featuring multi-layered shelves, time limits, and star ratings.",
+  "requestFramePermissions": []
+}

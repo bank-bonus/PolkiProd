@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Shelf Match Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+      
+      body {
+        font-family: 'Fredoka', sans-serif;
+        background-color: #2e1010; /* Dark red/brown background */
+        touch-action: manipulation;
+        overflow: hidden;
+      }
+      
+      /* Custom scrollbar for webkit */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+      }
+
+      .bounce-enter {
+        animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      }
+
+      @keyframes bounceIn {
+        0% { transform: scale(0); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      .shiny-effect {
+        position: relative;
+        overflow: hidden;
+      }
+      .shiny-effect::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+        transform: rotate(30deg);
+        animation: shine 3s infinite;
+      }
+
+      @keyframes shine {
+        0% { transform: translateX(-100%) rotate(30deg); }
+        20% { transform: translateX(100%) rotate(30deg); }
+        100% { transform: translateX(100%) rotate(30deg); }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

@@ -15,15 +15,19 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
   const [tray, setTray] = useState<GameItem[]>([]);
   const [timeLeft, setTimeLeft] = useState(levelConfig.timeLimitSeconds);
   const [isProcessingMatch, setIsProcessingMatch] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Initialize Level
   useEffect(() => {
+    setIsInitialized(false);
     generateLevel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelConfig]);
 
   // Timer
   useEffect(() => {
+    if (!isInitialized) return;
+    
     if (timeLeft <= 0) {
       onGameOver(false, 0);
       return;
@@ -34,7 +38,7 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, onGameOver]);
+  }, [timeLeft, onGameOver, isInitialized]);
 
   const generateLevel = () => {
     const newItems: GameItem[] = [];
@@ -81,6 +85,8 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     setItems(newItems);
     setTray([]);
     setTimeLeft(levelConfig.timeLimitSeconds);
+    // Slight delay to ensure render cycle catches up before allowing win condition
+    setTimeout(() => setIsInitialized(true), 100);
   };
 
   const isBlocked = (targetItem: GameItem, allItems: GameItem[]) => {
@@ -144,6 +150,9 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
 
   // Separate Effect for Win Condition
   useEffect(() => {
+    // Only check for win if the level has been initialized
+    if (!isInitialized) return;
+
     if (items.length === 0 && tray.length === 0) {
       // WIN
       const stars = timeLeft >= levelConfig.threeStarThreshold ? 3 
@@ -151,7 +160,7 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
                   : 1;
       onGameOver(true, stars);
     }
-  }, [items.length, tray.length, timeLeft, levelConfig, onGameOver]);
+  }, [items.length, tray.length, timeLeft, levelConfig, onGameOver, isInitialized]);
 
   // Rendering Shelves
   const shelves = Array.from({ length: levelConfig.shelfCount }).map((_, shelfIdx) => {

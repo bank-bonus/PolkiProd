@@ -35,7 +35,7 @@ export const Tray: React.FC<TrayProps> = ({ items }) => {
       
       {/* Visual Decor */}
       <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-[#8b5a36] rounded-t-xl flex items-center justify-center shadow-lg">
-        <span className="text-[10px] text-amber-100 font-bold uppercase tracking-widest">Collector</span>
+        <span className="text-[10px] text-amber-100 font-bold uppercase tracking-widest">Корзина</span>
       </div>
     </div>
   );

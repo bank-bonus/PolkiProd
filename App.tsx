@@ -18,16 +18,23 @@ const getLevelConfig = (level: number): LevelConfig => {
   // Difficulty scaling
   const typeCount = Math.min(types.length, 3 + Math.floor(level / 2));
   const availableTypes = types.slice(0, typeCount);
-  const sets = 3 + level; // Level 1 = 4 sets (12 items), Level 2 = 5 sets (15 items)
   
-  // Shelf/Slot calculation logic to fit items
-  const totalItems = sets * 3;
-  const shelfCount = Math.min(6, 2 + Math.floor(level / 3));
+  // Sets increase by level.
+  const sets = 3 + level; 
+  
+  // Shelf count: Starts at 2, increases every level until max 6.
+  // Level 1: 2 shelves
+  // Level 2: 3 shelves
+  // Level 3: 4 shelves
+  // Level 4: 5 shelves
+  // Level 5+: 6 shelves
+  const shelfCount = Math.min(6, 1 + level);
+
   const slotsPerShelf = Math.min(5, 3 + Math.floor(level / 4));
   
   // Ensure enough capacity (layers logic handled in Game gen)
   // Just simple linear increase of time
-  const timeLimit = baseTime + (level * 10);
+  const timeLimit = baseTime + (level * 15);
 
   return {
     levelNumber: level,
@@ -177,7 +184,7 @@ export default function App() {
            onClick={() => handleLevelSelect(progress.unlockedLevel)}
            className="w-full max-w-md mx-auto block bg-[#76c043] hover:bg-[#65a639] text-white text-2xl font-bold py-4 rounded-2xl shadow-[0_8px_0_#4e8529] active:shadow-[0_0px_0_#4e8529] active:translate-y-2 transition-all pointer-events-auto uppercase tracking-wide"
         >
-          Play Level {progress.unlockedLevel}
+          УРОВЕНЬ {progress.unlockedLevel}
         </button>
       </div>
     </div>
@@ -189,8 +196,8 @@ export default function App() {
         {/* Background shine */}
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-yellow-100 to-transparent opacity-50"></div>
 
-        <h2 className={`text-4xl font-black mb-6 relative z-10 ${won ? 'text-green-600' : 'text-red-500'}`}>
-          {won ? 'LEVEL CLEAR!' : 'OUT OF MOVES'}
+        <h2 className={`text-3xl font-black mb-6 relative z-10 uppercase ${won ? 'text-green-600' : 'text-red-500'}`}>
+          {won ? 'ПОБЕДА!' : 'ХОДОВ НЕТ'}
         </h2>
 
         {/* Stars */}
@@ -221,24 +228,24 @@ export default function App() {
           {won ? (
              <button 
                onClick={handleNextLevel}
-               className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-[0_4px_0_#166534] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2"
+               className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-[0_4px_0_#166534] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 uppercase"
              >
-               <Play size={24} fill="currentColor" /> NEXT LEVEL
+               <Play size={24} fill="currentColor" /> Дальше
              </button>
           ) : (
             <button 
               onClick={handleRetry}
-              className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-[0_4px_0_#92400e] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-[0_4px_0_#92400e] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 uppercase"
             >
-              <RotateCcw size={24} /> TRY AGAIN
+              <RotateCcw size={24} /> Заново
             </button>
           )}
 
           <button 
             onClick={handleHome}
-            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 uppercase"
           >
-            <MapIcon size={20} /> MAP
+            <MapIcon size={20} /> Карта
           </button>
         </div>
       </div>
@@ -262,9 +269,9 @@ export default function App() {
       {gameState === GameState.PAUSED && (
         <div className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center backdrop-blur-sm">
            <div className="bg-white p-8 rounded-2xl flex flex-col gap-4 w-64 shadow-2xl">
-              <h2 className="text-2xl font-bold text-center text-gray-800">PAUSED</h2>
-              <button onClick={() => setGameState(GameState.PLAYING)} className="bg-blue-500 text-white p-3 rounded-lg font-bold">RESUME</button>
-              <button onClick={handleHome} className="bg-gray-200 text-gray-700 p-3 rounded-lg font-bold">EXIT</button>
+              <h2 className="text-2xl font-bold text-center text-gray-800">ПАУЗА</h2>
+              <button onClick={() => setGameState(GameState.PLAYING)} className="bg-blue-500 text-white p-3 rounded-lg font-bold uppercase">Продолжить</button>
+              <button onClick={handleHome} className="bg-gray-200 text-gray-700 p-3 rounded-lg font-bold uppercase">Меню</button>
            </div>
         </div>
       )}

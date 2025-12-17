@@ -86,15 +86,13 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     setItems(newItems);
     setTray([]);
     setTimeLeft(levelConfig.timeLimitSeconds);
-    // Slight delay to ensure render cycle catches up before allowing win condition
     setTimeout(() => setIsInitialized(true), 100);
   };
 
   const isBlocked = (targetItem: GameItem, allItems: GameItem[]) => {
-    // An item is blocked if there is another item in the same shelf & slot with a HIGHER layer
     return allItems.some(item => 
-      !item.isMatched && // Active item
-      item.id !== targetItem.id && // Not self
+      !item.isMatched &&
+      item.id !== targetItem.id &&
       item.shelfIndex === targetItem.shelfIndex &&
       item.slotIndex === targetItem.slotIndex &&
       item.layer > targetItem.layer
@@ -103,21 +101,17 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
 
   const handleItemClick = (clickedItem: GameItem) => {
     if (isProcessingMatch) return;
-    if (tray.length >= MAX_TRAY_SIZE) return; // Tray full
-    if (isBlocked(clickedItem, items)) return; // Blocked by item in front
+    if (tray.length >= MAX_TRAY_SIZE) return; 
+    if (isBlocked(clickedItem, items)) return; 
 
-    // Move to tray
     const newTray = [...tray, clickedItem];
-    
     setItems(prev => prev.filter(i => i.id !== clickedItem.id));
     setTray(newTray);
   };
 
-  // Check for matches in tray
   useEffect(() => {
     if (tray.length === 0) return;
 
-    // Check for 3 of a kind
     const typeCounts: Record<string, number> = {};
     tray.forEach(item => {
       typeCounts[item.type] = (typeCounts[item.type] || 0) + 1;
@@ -129,7 +123,6 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
       setIsProcessingMatch(true);
       setMatchedType(foundMatchedType);
 
-      // Delay to show animation
       setTimeout(() => {
         setTray(prev => {
           let removedCount = 0;
@@ -145,7 +138,7 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
         });
         setIsProcessingMatch(false);
         setMatchedType(null);
-      }, 500); // 500ms for visual effect
+      }, 500); 
     } else {
       if (tray.length >= MAX_TRAY_SIZE) {
         onGameOver(false, 0);
@@ -153,13 +146,10 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     }
   }, [tray, onGameOver]);
 
-  // Separate Effect for Win Condition
   useEffect(() => {
-    // Only check for win if the level has been initialized
     if (!isInitialized) return;
 
     if (items.length === 0 && tray.length === 0) {
-      // WIN
       const stars = timeLeft >= levelConfig.threeStarThreshold ? 3 
                   : timeLeft >= levelConfig.twoStarThreshold ? 2 
                   : 1;
@@ -167,14 +157,17 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     }
   }, [items.length, tray.length, timeLeft, levelConfig, onGameOver, isInitialized]);
 
-  // Rendering Shelves
   const shelves = Array.from({ length: levelConfig.shelfCount }).map((_, shelfIdx) => {
     const shelfItems = items.filter(i => i.shelfIndex === shelfIdx);
     return { index: shelfIdx, items: shelfItems };
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#822d2d] overflow-hidden">
+    <div className="flex flex-col h-full bg-[#2a1b15] overflow-hidden relative">
+      {/* Background Ambience */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#4a2c20_0%,_#1a0f0a_100%)] z-0"></div>
+      
+      {/* Top Bar */}
       <div className="flex-none z-30">
         <TopBar 
             level={levelConfig.levelNumber} 
@@ -185,84 +178,107 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
         />
       </div>
       
-      {/* Game Area - Flex-1 to take available space, scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden relative bg-gradient-to-b from-[#822d2d] to-[#4a1a1a] scroll-smooth">
-        
-        <div className="flex flex-col gap-6 p-4 max-w-2xl mx-auto mt-4 pb-8">
-          {shelves.map(shelf => (
-            <div 
-              key={shelf.index} 
-              className="relative w-full h-28 md:h-32 bg-[#5c3a21] rounded-lg shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-b-8 border-[#3e2415] flex items-end px-4 flex-shrink-0"
-              style={{ perspective: '1000px' }}
-            >
-              {/* Shelf surface texture */}
-              <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] opacity-30 rounded-lg pointer-events-none"></div>
+      {/* Main Rack Area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative z-10 py-4 px-2 scroll-smooth">
+        <div className="max-w-2xl mx-auto relative mt-2 mb-8">
+           
+           {/* The Rack Container */}
+           <div className="relative bg-[#3e2415] rounded-t-3xl rounded-b-lg p-3 md:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] border-x-8 border-t-8 border-[#2b170f]">
               
-              <div className="relative w-full h-24 flex justify-around items-end mb-2">
-                 {Array.from({ length: levelConfig.slotsPerShelf }).map((_, slotIdx) => {
-                    const slotItems = shelf.items.filter(i => i.slotIndex === slotIdx);
-                    // Sort by layer ascending (0 back, 1 front)
-                    slotItems.sort((a, b) => a.layer - b.layer);
-                    
-                    if (slotItems.length === 0) {
-                        return <div key={slotIdx} className="w-16 h-full pointer-events-none" />;
-                    }
-
-                    return (
-                      <div key={slotIdx} className="relative w-16 h-20 md:w-20 md:h-24">
-                        {slotItems.map((item) => {
-                            const blocked = isBlocked(item, items);
-                            // Visual offset for depth
-                            const translateY = -(item.layer * 4); 
-                            const scale = 1 + (item.layer * 0.05);
-                            const brightness = blocked ? 'brightness-50 grayscale-[0.5]' : 'brightness-100 hover:brightness-110';
-                            const shadow = item.layer === 0 ? 'shadow-md' : 'shadow-xl';
-
-                            return (
-                              <button
-                                key={item.id}
-                                disabled={blocked}
-                                onClick={() => handleItemClick(item)}
-                                className={`
-                                  absolute bottom-0 left-0 w-full h-full 
-                                  rounded-xl border-b-4 
-                                  transition-all duration-300 transform
-                                  flex items-center justify-center p-2
-                                  ${ITEM_COLORS[item.type]}
-                                  ${brightness}
-                                  ${shadow}
-                                  active:scale-95
-                                `}
-                                style={{
-                                  zIndex: item.layer,
-                                  transform: `translateY(${translateY}px) scale(${scale})`,
-                                  cursor: blocked ? 'default' : 'pointer',
-                                  // Ensure button touch target is good
-                                  touchAction: 'manipulation'
-                                }}
-                              >
-                                {/* Inner Icon */}
-                                <div className="w-full h-full bg-white/40 rounded-lg p-1 backdrop-blur-sm">
-                                   {ITEM_ICONS[item.type]}
-                                </div>
-                                {blocked && <div className="absolute inset-0 bg-black/40 rounded-xl pointer-events-none" />}
-                              </button>
-                            );
-                        })}
-                      </div>
-                    );
-                 })}
+              {/* Rack Header/Crown */}
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#2b170f] px-8 py-2 rounded-t-xl border-t-2 border-[#5c3a21] shadow-lg">
+                 <div className="text-[#8b5a36] font-bold text-xs tracking-widest uppercase">Shelf Unit {levelConfig.levelNumber}</div>
               </div>
-            </div>
-          ))}
+
+              {/* Side shadows for depth */}
+              <div className="absolute top-0 left-0 w-4 h-full bg-gradient-to-r from-black/40 to-transparent pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-4 h-full bg-gradient-to-l from-black/40 to-transparent pointer-events-none"></div>
+
+              <div className="flex flex-col gap-5 md:gap-8">
+                {shelves.map(shelf => (
+                  <div 
+                    key={shelf.index} 
+                    className="relative w-full h-28 md:h-32 perspective-shelf"
+                  >
+                    {/* Back of shelf (darkness) */}
+                    <div className="absolute inset-0 bg-[#24130b] rounded-md shadow-inner"></div>
+
+                    {/* Shelf Floor */}
+                    <div className="absolute bottom-0 w-full h-4 bg-[#5c3a21] border-t border-[#8b5a36] shadow-md z-20 flex items-center justify-center">
+                        <div className="w-full h-full bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] opacity-20"></div>
+                        {/* Price tag holder strip */}
+                        <div className="absolute top-0 w-full h-1 bg-[#2b170f]/50"></div>
+                    </div>
+
+                    {/* Items Container */}
+                    <div className="absolute bottom-4 left-0 w-full h-full flex justify-around items-end px-2 z-10 pb-1">
+                      {Array.from({ length: levelConfig.slotsPerShelf }).map((_, slotIdx) => {
+                          const slotItems = shelf.items.filter(i => i.slotIndex === slotIdx);
+                          slotItems.sort((a, b) => a.layer - b.layer);
+                          
+                          if (slotItems.length === 0) {
+                              return <div key={slotIdx} className="w-16 h-full pointer-events-none" />;
+                          }
+
+                          return (
+                            <div key={slotIdx} className="relative w-16 h-20 md:w-20 md:h-24">
+                              {slotItems.map((item) => {
+                                  const blocked = isBlocked(item, items);
+                                  const translateY = -(item.layer * 5); 
+                                  const scale = 1 + (item.layer * 0.05);
+                                  // Dim blocked items more aggressively for visual clarity
+                                  const brightness = blocked ? 'brightness-[0.4] grayscale-[0.6]' : 'brightness-100 hover:brightness-110 hover:-translate-y-1';
+                                  const shadow = item.layer === 0 ? 'shadow-md' : 'shadow-[0_5px_15px_rgba(0,0,0,0.5)]';
+
+                                  return (
+                                    <button
+                                      key={item.id}
+                                      disabled={blocked}
+                                      onClick={() => handleItemClick(item)}
+                                      className={`
+                                        absolute bottom-0 left-0 w-full h-full 
+                                        rounded-xl border-b-4 
+                                        transition-all duration-300 transform
+                                        flex items-center justify-center p-2
+                                        ${ITEM_COLORS[item.type]}
+                                        ${brightness}
+                                        ${shadow}
+                                        active:scale-95
+                                      `}
+                                      style={{
+                                        zIndex: item.layer,
+                                        transform: `translateY(${translateY}px) scale(${scale})`,
+                                        cursor: blocked ? 'default' : 'pointer',
+                                        touchAction: 'manipulation'
+                                      }}
+                                    >
+                                      <div className="w-full h-full bg-white/40 rounded-lg p-1 backdrop-blur-sm shadow-inner">
+                                        {ITEM_ICONS[item.type]}
+                                      </div>
+                                      {blocked && <div className="absolute inset-0 bg-black/40 rounded-xl pointer-events-none" />}
+                                    </button>
+                                  );
+                              })}
+                            </div>
+                          );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+           </div>
         </div>
       </div>
 
-      {/* Fixed Tray at Bottom using flex-none so it pushes game area up */}
-      <div className="flex-none w-full bg-[#4a1a1a] z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.5)]">
-         <div className="w-full max-w-lg mx-auto p-2 pb-6">
-            <Tray items={tray} matchedType={matchedType} />
-         </div>
+      {/* Tray */}
+      <div className="flex-none w-full z-40 relative">
+          {/* Shadow casting up from tray */}
+          <div className="absolute -top-10 left-0 w-full h-10 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
+          <div className="bg-[#24130b] w-full p-2 pb-6 shadow-[0_-4px_20px_rgba(0,0,0,0.7)] border-t border-[#5c3a21]">
+             <div className="max-w-lg mx-auto">
+                <Tray items={tray} matchedType={matchedType} />
+             </div>
+          </div>
       </div>
     </div>
   );

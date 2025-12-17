@@ -1,6 +1,6 @@
 import React from 'react';
-import { GameItem } from '../types';
-import { ITEM_ICONS, ITEM_COLORS, MAX_TRAY_SIZE } from '../constants';
+import { GameItem } from '../types.ts';
+import { ITEM_ICONS, ITEM_COLORS, MAX_TRAY_SIZE } from '../constants.tsx';
 
 interface TrayProps {
   items: GameItem[];

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ItemType } from './types';
+import { ItemType } from './types.ts';
 import { 
   Apple, Banana, Cherry, Droplet, CircleDot, 
   Coffee, Pizza, Layers, 

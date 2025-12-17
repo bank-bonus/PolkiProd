@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Game } from './components/Game';
-import { LevelConfig, ItemType, GameState, PlayerProgress } from './types';
+import { Game } from './components/Game.tsx';
+import { LevelConfig, ItemType, GameState, PlayerProgress } from './types.ts';
 import { Play, Star, RotateCcw, Map as MapIcon, Home, Lock, Trophy } from 'lucide-react';
-import { MAX_LEVELS } from './constants';
+import { MAX_LEVELS } from './constants.tsx';
 
 // --- Helper to Generate Level Configs ---
 const getLevelConfig = (level: number): LevelConfig => {

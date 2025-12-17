@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { GameItem, ItemType, GameState, LevelConfig } from '../types';
-import { MAX_TRAY_SIZE, ITEM_ICONS, ITEM_COLORS } from '../constants';
-import { TopBar } from './TopBar';
-import { Tray } from './Tray';
+import React, { useState, useEffect } from 'react';
+import { GameItem, ItemType, LevelConfig } from '../types.ts';
+import { MAX_TRAY_SIZE, ITEM_ICONS, ITEM_COLORS } from '../constants.tsx';
+import { TopBar } from './TopBar.tsx';
+import { Tray } from './Tray.tsx';
 
 interface GameProps {
   levelConfig: LevelConfig;
@@ -50,16 +50,6 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     // Shuffle pool
     typePool = typePool.sort(() => Math.random() - 0.5);
 
-    // Distribute to grid
-    // We fill shelves 0 to shelfCount-1
-    // Slots 0 to slotsPerShelf-1
-    // Layers 0 to layersPerSlot-1 (0 is back, higher is front)
-    
-    let poolIndex = 0;
-    
-    // We need to ensure we don't have empty gaps that make items unreachable if strictly layer-based.
-    // Strategy: Fill layers from bottom (0) to top.
-    
     // Helper to randomize positions
     const positions: {shelf: number, slot: number, layer: number}[] = [];
     for(let s = 0; s < shelfCount; s++) {
@@ -70,14 +60,10 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
       }
     }
     
-    // Shuffle positions to make layout random, but we need to prioritize filling lower layers first? 
-    // Actually, in 3D matching, usually positions are fixed per level design. 
-    // Here we procedurally generate. 
-    // To ensure fairness, we just fill randomly. A front item blocks a back item.
-    
-    // Let's only use as many positions as we have items.
+    // Shuffle positions
     const usedPositions = positions.sort(() => Math.random() - 0.5).slice(0, typePool.length);
 
+    let poolIndex = 0;
     usedPositions.forEach((pos, index) => {
       if (poolIndex < typePool.length) {
         newItems.push({
@@ -116,8 +102,6 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     // Move to tray
     const newTray = [...tray, clickedItem];
     
-    // Remove from shelf (visually only, we keep it in array but update state or filter?)
-    // Better to filter out of 'items' to 'tray'
     setItems(prev => prev.filter(i => i.id !== clickedItem.id));
     setTray(newTray);
   };
@@ -138,12 +122,8 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
       setIsProcessingMatch(true);
       setTimeout(() => {
         setTray(prev => {
-          // Remove 3 instances of matchedType
           let removedCount = 0;
           const newTray: GameItem[] = [];
-          
-          // We need to keep order roughly, but usually match-3 games collapse matches
-          // Let's iterate and keep only non-matches or matches beyond 3 (unlikely to happen if we check often)
           for (const item of prev) {
             if (item.type === matchedType && removedCount < 3) {
               removedCount++;
@@ -154,20 +134,15 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
           return newTray;
         });
         setIsProcessingMatch(false);
-      }, 300); // Small delay for visual "match" effect
+      }, 300);
     } else {
-      // No match, check loss condition
       if (tray.length >= MAX_TRAY_SIZE) {
         onGameOver(false, 0);
       }
     }
-    
-    // Check Win Condition: No items left on shelf AND tray is empty
-    // Wait, tray empty is not enough, tray must empty via matches.
-    // If items is empty and tray is empty, we win.
   }, [tray, onGameOver]);
 
-  // Separate Effect for Win Condition to avoid race conditions
+  // Separate Effect for Win Condition
   useEffect(() => {
     if (items.length === 0 && tray.length === 0) {
       // WIN
@@ -178,9 +153,7 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
     }
   }, [items.length, tray.length, timeLeft, levelConfig, onGameOver]);
 
-
   // Rendering Shelves
-  // We need to group items by shelf for rendering
   const shelves = Array.from({ length: levelConfig.shelfCount }).map((_, shelfIdx) => {
     const shelfItems = items.filter(i => i.shelfIndex === shelfIdx);
     return { index: shelfIdx, items: shelfItems };
@@ -201,28 +174,27 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
         
         <div className="flex flex-col gap-6 pb-32 max-w-2xl mx-auto mt-4">
           {shelves.map(shelf => (
-            <div key={shelf.index} className="relative w-full h-28 md:h-32 bg-[#5c3a21] rounded-lg shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-b-8 border-[#3e2415] flex items-end px-4 perspective-1000">
-              {/* Shelf surface */}
+            <div 
+              key={shelf.index} 
+              className="relative w-full h-28 md:h-32 bg-[#5c3a21] rounded-lg shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-b-8 border-[#3e2415] flex items-end px-4"
+              style={{ perspective: '1000px' }}
+            >
+              {/* Shelf surface texture */}
               <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')] opacity-30 rounded-lg pointer-events-none"></div>
               
               <div className="relative w-full h-24 flex justify-around items-end mb-2">
-                 {/* Slots visualization - purely logical, but items are absolute within this relative container if we wanted strict slots. 
-                     For responsive flex layout, we just map items. 
-                     However, items need to stack. We need to render slots.
-                 */}
                  {Array.from({ length: levelConfig.slotsPerShelf }).map((_, slotIdx) => {
-                    // Find items in this slot
                     const slotItems = shelf.items.filter(i => i.slotIndex === slotIdx);
                     // Sort by layer ascending (0 back, 1 front)
                     slotItems.sort((a, b) => a.layer - b.layer);
                     
                     if (slotItems.length === 0) {
-                        return <div key={slotIdx} className="w-16 h-full" />; // Empty placeholder
+                        return <div key={slotIdx} className="w-16 h-full pointer-events-none" />;
                     }
 
                     return (
                       <div key={slotIdx} className="relative w-16 h-20 md:w-20 md:h-24">
-                        {slotItems.map((item, idx) => {
+                        {slotItems.map((item) => {
                             const blocked = isBlocked(item, items);
                             // Visual offset for depth
                             const translateY = -(item.layer * 4); 
@@ -248,7 +220,9 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
                                 style={{
                                   zIndex: item.layer,
                                   transform: `translateY(${translateY}px) scale(${scale})`,
-                                  cursor: blocked ? 'default' : 'pointer'
+                                  cursor: blocked ? 'default' : 'pointer',
+                                  // Ensure button touch target is good
+                                  touchAction: 'manipulation'
                                 }}
                               >
                                 {/* Inner Icon */}

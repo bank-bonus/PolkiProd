@@ -25,9 +25,7 @@ export interface GameItem {
 
 export interface LevelConfig {
   levelNumber: number;
-  timeLimitSeconds: number;
-  threeStarThreshold: number; // Seconds remaining
-  twoStarThreshold: number;
+  moveLimit: number; // Changed from timeLimit
   itemTypes: ItemType[];
   shelfCount: number;
   slotsPerShelf: number;
@@ -47,5 +45,4 @@ export enum GameState {
 export interface PlayerProgress {
   unlockedLevel: number; // Max level reached
   stars: Record<number, number>; // Level number -> Stars earned
-  hearts: number;
 }

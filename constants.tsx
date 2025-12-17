@@ -1,41 +1,37 @@
 import React from 'react';
 import { ItemType } from './types.ts';
-import { 
-  Apple, Banana, Cherry, Droplet, CircleDot, 
-  Coffee, Pizza, Layers, 
-  IceCream, Gift, Gem, Diamond
-} from 'lucide-react';
 
 export const MAX_TRAY_SIZE = 7;
-export const MAX_LEVELS = 12;
+export const MAX_LEVELS = 20;
 
-// Using extremely standard icons to prevent import errors
-export const ITEM_ICONS: Record<ItemType, React.ReactNode> = {
-  [ItemType.APPLE]: <Apple className="w-full h-full text-red-500 drop-shadow-sm" />,
-  [ItemType.BANANA]: <Banana className="w-full h-full text-yellow-500 drop-shadow-sm" />,
-  [ItemType.CHERRY]: <Cherry className="w-full h-full text-pink-600 drop-shadow-sm" />,
-  [ItemType.MILK]: <Droplet className="w-full h-full text-blue-400 drop-shadow-sm" />, // Replaced Milk
-  [ItemType.COOKIE]: <CircleDot className="w-full h-full text-amber-700 drop-shadow-sm" />, // Replaced Cookie
-  [ItemType.SODA]: <Coffee className="w-full h-full text-orange-500 drop-shadow-sm" />, // Replaced Soda/Beer
-  [ItemType.PIZZA]: <Pizza className="w-full h-full text-yellow-600 drop-shadow-sm" />,
-  [ItemType.BURGER]: <Layers className="w-full h-full text-orange-800 drop-shadow-sm" />, // Replaced Burger/Sandwich
-  [ItemType.ICECREAM]: <IceCream className="w-full h-full text-pink-400 drop-shadow-sm" />,
-  [ItemType.GIFT]: <Gift className="w-full h-full text-purple-600 drop-shadow-sm" />,
-  [ItemType.CANDY]: <Gem className="w-full h-full text-red-400 drop-shadow-sm" />, // Replaced Candy
-  [ItemType.DIAMOND]: <Diamond className="w-full h-full text-cyan-400 drop-shadow-sm" />,
+// Using Emojis for "Juicy" native look
+export const ITEM_ICONS: Record<ItemType, string> = {
+  [ItemType.APPLE]: '🍎',
+  [ItemType.BANANA]: '🍌',
+  [ItemType.CHERRY]: '🍒',
+  [ItemType.MILK]: '🥛',
+  [ItemType.COOKIE]: '🍪',
+  [ItemType.SODA]: '🥤',
+  [ItemType.PIZZA]: '🍕',
+  [ItemType.BURGER]: '🍔',
+  [ItemType.ICECREAM]: '🍦',
+  [ItemType.GIFT]: '🎁',
+  [ItemType.CANDY]: '🍬',
+  [ItemType.DIAMOND]: '💎',
 };
 
+// More vibrant, "packaging" style colors
 export const ITEM_COLORS: Record<ItemType, string> = {
-  [ItemType.APPLE]: 'bg-red-100 border-red-300',
-  [ItemType.BANANA]: 'bg-yellow-100 border-yellow-300',
-  [ItemType.CHERRY]: 'bg-pink-100 border-pink-300',
-  [ItemType.MILK]: 'bg-blue-100 border-blue-300',
-  [ItemType.COOKIE]: 'bg-amber-100 border-amber-300',
-  [ItemType.SODA]: 'bg-orange-100 border-orange-300',
-  [ItemType.PIZZA]: 'bg-yellow-50 border-yellow-400',
-  [ItemType.BURGER]: 'bg-orange-50 border-orange-400',
-  [ItemType.ICECREAM]: 'bg-pink-50 border-pink-300',
-  [ItemType.GIFT]: 'bg-purple-100 border-purple-300',
-  [ItemType.CANDY]: 'bg-red-50 border-red-200',
-  [ItemType.DIAMOND]: 'bg-cyan-50 border-cyan-300',
+  [ItemType.APPLE]: 'bg-red-500 border-red-700 shadow-[inset_0_2px_10px_rgba(255,255,255,0.3)]',
+  [ItemType.BANANA]: 'bg-yellow-400 border-yellow-600 shadow-[inset_0_2px_10px_rgba(255,255,255,0.4)]',
+  [ItemType.CHERRY]: 'bg-rose-500 border-rose-800 shadow-[inset_0_2px_10px_rgba(255,255,255,0.3)]',
+  [ItemType.MILK]: 'bg-blue-400 border-blue-600 shadow-[inset_0_2px_10px_rgba(255,255,255,0.3)]',
+  [ItemType.COOKIE]: 'bg-amber-600 border-amber-800 shadow-[inset_0_2px_10px_rgba(255,255,255,0.2)]',
+  [ItemType.SODA]: 'bg-orange-500 border-orange-700 shadow-[inset_0_2px_10px_rgba(255,255,255,0.3)]',
+  [ItemType.PIZZA]: 'bg-yellow-500 border-yellow-700 shadow-[inset_0_2px_10px_rgba(255,255,255,0.3)]',
+  [ItemType.BURGER]: 'bg-orange-600 border-orange-800 shadow-[inset_0_2px_10px_rgba(255,255,255,0.2)]',
+  [ItemType.ICECREAM]: 'bg-pink-400 border-pink-600 shadow-[inset_0_2px_10px_rgba(255,255,255,0.3)]',
+  [ItemType.GIFT]: 'bg-purple-500 border-purple-700 shadow-[inset_0_2px_10px_rgba(255,255,255,0.3)]',
+  [ItemType.CANDY]: 'bg-teal-400 border-teal-600 shadow-[inset_0_2px_10px_rgba(255,255,255,0.3)]',
+  [ItemType.DIAMOND]: 'bg-cyan-400 border-cyan-600 shadow-[inset_0_2px_10px_rgba(255,255,255,0.4)]',
 };

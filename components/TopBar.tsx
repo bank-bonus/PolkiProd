@@ -1,49 +1,47 @@
 import React from 'react';
-import { Pause, Clock, Star } from 'lucide-react';
+import { Pause, Footprints } from 'lucide-react';
 
 interface TopBarProps {
   level: number;
-  timeLeft: number;
-  totalTime: number;
+  movesLeft: number;
+  totalMoves: number;
   onPause: () => void;
-  score: number; // Actually currently using stars based on time, but visual score is nice
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ level, timeLeft, totalTime, onPause }) => {
-  const progress = Math.min(100, Math.max(0, (timeLeft / totalTime) * 100));
-  
-  // Format MM:SS
-  const mins = Math.floor(timeLeft / 60);
-  const secs = timeLeft % 60;
-  const timeString = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+export const TopBar: React.FC<TopBarProps> = ({ level, movesLeft, totalMoves, onPause }) => {
+  const isDanger = movesLeft <= 5;
 
   return (
-    <div className="w-full px-4 py-3 flex items-center justify-between bg-white/10 backdrop-blur-md border-b border-white/10 relative z-20">
-      <div className="flex items-center space-x-2">
-        <div className="bg-amber-400 w-10 h-10 rounded-full flex items-center justify-center border-2 border-amber-600 shadow-lg">
-          <span className="font-bold text-amber-900">{level}</span>
+    <div className="w-full px-4 py-3 flex items-center justify-between bg-white/10 backdrop-blur-md border-b border-white/10 relative z-20 shadow-lg">
+      
+      {/* Level Badge */}
+      <div className="flex items-center">
+        <div className="bg-gradient-to-br from-amber-400 to-amber-600 w-12 h-12 rounded-xl flex items-center justify-center border-b-4 border-amber-800 shadow-lg transform rotate-[-3deg]">
+          <span className="font-black text-white text-xl drop-shadow-md">{level}</span>
+        </div>
+        <div className="ml-2 flex flex-col">
+            <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest leading-none">Level</span>
+            <span className="text-white font-bold leading-none">Map</span>
         </div>
       </div>
 
-      <div className="flex flex-col items-center flex-1 mx-4">
-        <div className="bg-white/90 px-4 py-1 rounded-full border-2 border-red-800 shadow-md flex items-center space-x-2 w-32 justify-center">
-            <Clock size={16} className="text-red-600" />
-            <span className="font-bold text-red-800 font-mono text-lg">{timeString}</span>
-        </div>
-        {/* Progress Bar */}
-        <div className="w-full max-w-[200px] h-2 bg-black/30 rounded-full mt-2 overflow-hidden border border-white/20">
-          <div 
-            className={`h-full transition-all duration-1000 ease-linear ${progress < 20 ? 'bg-red-500' : 'bg-green-500'}`}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+      {/* Moves Counter */}
+      <div className={`
+        flex items-center gap-3 px-6 py-2 rounded-full border-4 shadow-xl transition-all duration-300
+        ${isDanger ? 'bg-red-500 border-red-700 animate-pulse' : 'bg-white border-blue-500'}
+      `}>
+         <Footprints className={isDanger ? 'text-white' : 'text-blue-500'} size={24} fill="currentColor" />
+         <span className={`text-2xl font-black ${isDanger ? 'text-white' : 'text-slate-700'}`}>
+            {movesLeft}
+         </span>
       </div>
 
+      {/* Pause Button */}
       <button 
         onClick={onPause}
-        className="bg-white/20 p-2 rounded-xl hover:bg-white/30 transition-colors border border-white/20"
+        className="bg-white/20 p-2.5 rounded-xl hover:bg-white/30 transition-colors border border-white/20 active:scale-95"
       >
-        <Pause className="text-white" size={24} />
+        <Pause className="text-white" size={24} fill="white" />
       </button>
     </div>
   );

@@ -3,7 +3,7 @@ import { ItemType } from './types';
 import { 
   Apple, Banana, Cherry, Milk, Cookie, 
   Beer as Soda, Pizza, Sandwich as Burger, 
-  IceCream2 as IceCream, Gift, Candy, Diamond
+  Popsicle as IceCream, Gift, Candy, Diamond
 } from 'lucide-react';
 
 export const MAX_TRAY_SIZE = 7;

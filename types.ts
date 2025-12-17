@@ -1,3 +1,4 @@
+
 export enum ItemType {
   APPLE = 'apple',
   BANANA = 'banana',
@@ -16,8 +17,7 @@ export enum ItemType {
 export interface GameItem {
   id: string;
   type: ItemType;
-  layer: number; // 0 is front, 1 is behind 0, etc. (Actually, let's reverse: Higher is front)
-  // Let's stick to: Layer 0 is BACK, Layer 1 is FRONT.
+  layer: number; // 0 is back, 1 is front
   shelfIndex: number;
   slotIndex: number;
   isMatched: boolean;

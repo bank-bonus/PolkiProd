@@ -15,36 +15,45 @@ const getLevelConfig = (level: number): LevelConfig => {
     ItemType.GIFT, ItemType.CANDY, ItemType.DIAMOND
   ];
 
-  // Difficulty scaling
-  const typeCount = Math.min(types.length, 3 + Math.floor(level / 2));
+  // Difficulty scaling: Unlock types faster
+  const typeCount = Math.min(types.length, 3 + Math.floor(level * 0.8));
   const availableTypes = types.slice(0, typeCount);
   
-  // Sets increase by level.
-  const sets = 3 + level; 
-  
-  // Shelf count: Starts at 2, increases every level until max 6.
-  // Level 1: 2 shelves
-  // Level 2: 3 shelves
-  // Level 3: 4 shelves
-  // Level 4: 5 shelves
-  // Level 5+: 6 shelves
-  const shelfCount = Math.min(6, 1 + level);
+  // Shelf count: Starts at 3, increases aggressively to 8
+  const shelfCount = Math.min(8, 2 + Math.ceil(level / 1.5));
 
-  const slotsPerShelf = Math.min(5, 3 + Math.floor(level / 4));
+  // Slots per shelf: Wide shelves later
+  const slotsPerShelf = Math.min(6, 3 + Math.floor(level / 2));
   
-  // Ensure enough capacity (layers logic handled in Game gen)
-  // Just simple linear increase of time
-  const timeLimit = baseTime + (level * 15);
+  // Layers: Increase depth significantly
+  const layersPerSlot = Math.min(5, 2 + Math.floor(level / 2.5));
+
+  // Capacity calculations to ensure dense levels
+  const capacity = shelfCount * slotsPerShelf * layersPerSlot;
+  
+  // High fill rate (70-95%)
+  const fillRate = 0.7 + (Math.min(level, 10) * 0.025); 
+  let targetTotalItems = Math.floor(capacity * fillRate);
+  
+  // Ensure sets of 3
+  let sets = Math.floor(targetTotalItems / 3);
+  
+  // Minimum sets grows with level to force difficulty
+  sets = Math.max(5 + level * 2, sets);
+
+  // Time limit: Tighten it as player gets better
+  // Base time + small amount per set
+  const timeLimit = baseTime + (sets * 4); 
 
   return {
     levelNumber: level,
     timeLimitSeconds: timeLimit,
-    threeStarThreshold: timeLimit * 0.5,
-    twoStarThreshold: timeLimit * 0.25,
+    threeStarThreshold: timeLimit * 0.6, // Harder to get 3 stars
+    twoStarThreshold: timeLimit * 0.3,
     itemTypes: availableTypes,
     shelfCount,
     slotsPerShelf,
-    layersPerSlot: 2 + Math.floor(level / 5),
+    layersPerSlot,
     totalSets: sets,
   };
 };
@@ -90,7 +99,6 @@ export default function App() {
       setCurrentLevel(prev => prev + 1);
       setGameState(GameState.PLAYING);
     } else {
-      // Completed all levels
       setGameState(GameState.MAP);
     }
   };
@@ -106,16 +114,17 @@ export default function App() {
   // --- Screens ---
 
   const renderMap = () => (
-    <div className="min-h-screen bg-[#cce3f3] relative overflow-y-auto">
+    <div className="h-screen bg-[#cce3f3] relative overflow-y-auto overflow-x-hidden flex flex-col">
       {/* Snow/Winter Theme Background */}
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/snow.png')] opacity-50 pointer-events-none"></div>
+      <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/snow.png')] opacity-50 pointer-events-none z-0"></div>
       
       {/* Header */}
-      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md p-4 flex justify-between items-center shadow-sm">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md p-4 flex justify-between items-center shadow-md border-b border-white/50">
          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                <Home size={20} />
+            <div className="bg-amber-500 rounded-lg p-2 text-white shadow-lg">
+                <MapIcon size={24} />
             </div>
+            <span className="font-bold text-gray-700 text-lg">Карта</span>
          </div>
          <div className="bg-white px-4 py-1 rounded-full border border-red-200 shadow-sm flex items-center gap-2">
             <span className="text-red-500">❤️</span>
@@ -123,68 +132,93 @@ export default function App() {
          </div>
       </div>
 
-      {/* Map Path */}
-      <div className="max-w-md mx-auto p-8 relative min-h-[800px]">
-        {/* SVG Path for connecting dots */}
-        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0" style={{ opacity: 0.3 }}>
-           {/* Simple zig zag path would be complex to dynamic render perfectly, putting a simple dashed line down the middle for now */}
-           <line x1="50%" y1="0" x2="50%" y2="100%" stroke="white" strokeWidth="20" strokeDasharray="20,20" strokeLinecap="round" />
-        </svg>
+      {/* Map Content */}
+      <div className="flex-1 w-full relative min-h-[1200px] py-10">
+         <div className="w-full max-w-md mx-auto relative flex flex-col-reverse items-center justify-end h-full gap-8 pb-32">
+            
+            {/* SVG Connector Path */}
+            <svg className="absolute top-0 left-0 w-full h-full pointer-events-none z-0" style={{ opacity: 0.4 }}>
+               <path 
+                  d={(() => {
+                    // Generate a simple zigzag path string
+                    // This is an approximation. Ideally we'd calculate exact coordinates of buttons.
+                    // Assuming flex-col-reverse starts from bottom.
+                    let path = "";
+                    const stepY = 112; // approx 80px height + 32px gap
+                    const centerX = 50; // percent
+                    const offsetX = 20; // percent
+                    const startY = 50; // padding bottom
+                    
+                    for(let i=0; i<MAX_LEVELS; i++) {
+                       const y = 1100 - (i * 100); 
+                       const x = i % 2 === 0 ? centerX - offsetX : centerX + offsetX;
+                       path += i === 0 ? `M ${x}% ${y} ` : `L ${x}% ${y} `;
+                    }
+                    return path;
+                  })()}
+                  fill="none" 
+                  stroke="white" 
+                  strokeWidth="8" 
+                  strokeDasharray="15,15"
+                  strokeLinecap="round"
+               />
+            </svg>
 
-        <div className="flex flex-col-reverse items-center gap-12 z-10 relative mt-10">
-           {Array.from({ length: MAX_LEVELS }).map((_, i) => {
-             const level = i + 1;
-             const isUnlocked = level <= progress.unlockedLevel;
-             const stars = progress.stars[level] || 0;
-             const isCurrent = level === progress.unlockedLevel;
+            {Array.from({ length: MAX_LEVELS }).map((_, i) => {
+               const level = i + 1;
+               const isUnlocked = level <= progress.unlockedLevel;
+               const stars = progress.stars[level] || 0;
+               const isCurrent = level === progress.unlockedLevel;
+               
+               // Zigzag Positioning Logic
+               const offsetClass = i % 2 === 0 ? '-translate-x-12 md:-translate-x-16' : 'translate-x-12 md:translate-x-16';
 
-             return (
-               <div key={level} className="relative group">
-                 <button
-                   onClick={() => handleLevelSelect(level)}
-                   disabled={!isUnlocked}
-                   className={`
-                     w-20 h-20 rounded-full flex items-center justify-center border-4 shadow-xl transition-all transform
-                     ${isUnlocked 
-                        ? isCurrent 
-                            ? 'bg-amber-400 border-amber-600 scale-110 animate-pulse' 
-                            : 'bg-blue-400 border-blue-600 hover:scale-105' 
-                        : 'bg-gray-300 border-gray-400'
-                     }
-                   `}
-                 >
-                   {isUnlocked ? (
-                     <span className="text-2xl font-bold text-white drop-shadow-md">{level}</span>
-                   ) : (
-                     <Lock className="text-gray-500" size={24} />
-                   )}
-                 </button>
-                 
-                 {/* Stars Display */}
-                 {isUnlocked && stars > 0 && (
-                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 flex gap-1">
-                      {[1, 2, 3].map(s => (
-                        <Star 
-                          key={s} 
-                          size={16} 
-                          className={`fill-current ${s <= stars ? 'text-yellow-400 stroke-yellow-600' : 'text-gray-300'}`} 
-                        />
-                      ))}
-                   </div>
-                 )}
-               </div>
-             );
-           })}
-        </div>
+               return (
+                 <div key={level} className={`relative z-10 transform ${offsetClass}`}>
+                   <button
+                     onClick={() => handleLevelSelect(level)}
+                     disabled={!isUnlocked}
+                     className={`
+                       w-20 h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center border-b-8 shadow-2xl transition-all
+                       ${isUnlocked 
+                          ? isCurrent 
+                              ? 'bg-amber-400 border-amber-700 -translate-y-2 animate-bounce' 
+                              : 'bg-gradient-to-br from-blue-400 to-blue-500 border-blue-700 hover:-translate-y-1' 
+                          : 'bg-gray-300 border-gray-400 grayscale'
+                       }
+                     `}
+                   >
+                     {isUnlocked ? (
+                       <>
+                         <span className="text-3xl font-black text-white drop-shadow-md">{level}</span>
+                         {/* Stars on the button */}
+                         <div className="flex gap-0.5 mt-1">
+                            {[1, 2, 3].map(s => (
+                                <Star 
+                                  key={s} 
+                                  size={12} 
+                                  className={`fill-current ${s <= stars ? 'text-yellow-300' : 'text-black/20'}`} 
+                                />
+                            ))}
+                         </div>
+                       </>
+                     ) : (
+                       <Lock className="text-gray-500" size={24} />
+                     )}
+                   </button>
+                 </div>
+               );
+            })}
+         </div>
       </div>
       
-      {/* Start Button */}
-      <div className="fixed bottom-0 w-full p-6 bg-gradient-to-t from-white via-white to-transparent pointer-events-none z-30">
+      {/* Footer Play Button */}
+      <div className="fixed bottom-0 w-full p-4 bg-gradient-to-t from-white via-white/90 to-transparent pointer-events-none z-40">
         <button 
            onClick={() => handleLevelSelect(progress.unlockedLevel)}
-           className="w-full max-w-md mx-auto block bg-[#76c043] hover:bg-[#65a639] text-white text-2xl font-bold py-4 rounded-2xl shadow-[0_8px_0_#4e8529] active:shadow-[0_0px_0_#4e8529] active:translate-y-2 transition-all pointer-events-auto uppercase tracking-wide"
+           className="w-full max-w-sm mx-auto flex items-center justify-center bg-[#76c043] hover:bg-[#65a639] text-white text-xl font-bold py-4 rounded-xl shadow-[0_6px_0_#4e8529] active:shadow-[0_0px_0_#4e8529] active:translate-y-2 transition-all pointer-events-auto uppercase tracking-wide gap-2"
         >
-          УРОВЕНЬ {progress.unlockedLevel}
+          <Play fill="currentColor" /> Играть: Уровень {progress.unlockedLevel}
         </button>
       </div>
     </div>
@@ -218,7 +252,7 @@ export default function App() {
 
         {!won && (
            <div className="mb-8 flex justify-center">
-              <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center">
+              <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center animate-pulse">
                  <span className="text-4xl">😢</span>
               </div>
            </div>
@@ -243,7 +277,7 @@ export default function App() {
 
           <button 
             onClick={handleHome}
-            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 uppercase"
+            className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 uppercase shadow-sm"
           >
             <MapIcon size={20} /> Карта
           </button>
@@ -254,7 +288,7 @@ export default function App() {
 
   return (
     <div className="w-full h-screen overflow-hidden font-sans select-none">
-      {gameState === GameState.MENU && renderMap()} {/* Actually start at map for simplicity */}
+      {gameState === GameState.MENU && renderMap()} 
       {gameState === GameState.MAP && renderMap()}
       
       {gameState === GameState.PLAYING && (
@@ -270,8 +304,8 @@ export default function App() {
         <div className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center backdrop-blur-sm">
            <div className="bg-white p-8 rounded-2xl flex flex-col gap-4 w-64 shadow-2xl">
               <h2 className="text-2xl font-bold text-center text-gray-800">ПАУЗА</h2>
-              <button onClick={() => setGameState(GameState.PLAYING)} className="bg-blue-500 text-white p-3 rounded-lg font-bold uppercase">Продолжить</button>
-              <button onClick={handleHome} className="bg-gray-200 text-gray-700 p-3 rounded-lg font-bold uppercase">Меню</button>
+              <button onClick={() => setGameState(GameState.PLAYING)} className="bg-blue-500 text-white p-3 rounded-lg font-bold uppercase shadow-md active:translate-y-1">Продолжить</button>
+              <button onClick={handleHome} className="bg-gray-200 text-gray-700 p-3 rounded-lg font-bold uppercase shadow-sm active:translate-y-1">В Меню</button>
            </div>
         </div>
       )}

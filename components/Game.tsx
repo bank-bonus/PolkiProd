@@ -15,6 +15,7 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
   const [tray, setTray] = useState<GameItem[]>([]);
   const [timeLeft, setTimeLeft] = useState(levelConfig.timeLimitSeconds);
   const [isProcessingMatch, setIsProcessingMatch] = useState(false);
+  const [matchedType, setMatchedType] = useState<ItemType | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
   // Initialize Level
@@ -122,16 +123,19 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
       typeCounts[item.type] = (typeCounts[item.type] || 0) + 1;
     });
 
-    const matchedType = Object.keys(typeCounts).find(key => typeCounts[key] >= 3);
+    const foundMatchedType = Object.keys(typeCounts).find(key => typeCounts[key] >= 3) as ItemType | undefined;
 
-    if (matchedType) {
+    if (foundMatchedType) {
       setIsProcessingMatch(true);
+      setMatchedType(foundMatchedType);
+
+      // Delay to show animation
       setTimeout(() => {
         setTray(prev => {
           let removedCount = 0;
           const newTray: GameItem[] = [];
           for (const item of prev) {
-            if (item.type === matchedType && removedCount < 3) {
+            if (item.type === foundMatchedType && removedCount < 3) {
               removedCount++;
             } else {
               newTray.push(item);
@@ -140,7 +144,8 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
           return newTray;
         });
         setIsProcessingMatch(false);
-      }, 300);
+        setMatchedType(null);
+      }, 500); // 500ms for visual effect
     } else {
       if (tray.length >= MAX_TRAY_SIZE) {
         onGameOver(false, 0);
@@ -169,23 +174,25 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#822d2d]">
-      <TopBar 
-        level={levelConfig.levelNumber} 
-        timeLeft={timeLeft} 
-        totalTime={levelConfig.timeLimitSeconds} 
-        onPause={onPause}
-        score={0}
-      />
+    <div className="flex flex-col h-full bg-[#822d2d] overflow-hidden">
+      <div className="flex-none z-30">
+        <TopBar 
+            level={levelConfig.levelNumber} 
+            timeLeft={timeLeft} 
+            totalTime={levelConfig.timeLimitSeconds} 
+            onPause={onPause}
+            score={0}
+        />
+      </div>
       
-      {/* Game Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 relative bg-gradient-to-b from-[#822d2d] to-[#4a1a1a]">
+      {/* Game Area - Flex-1 to take available space, scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden relative bg-gradient-to-b from-[#822d2d] to-[#4a1a1a] scroll-smooth">
         
-        <div className="flex flex-col gap-6 pb-32 max-w-2xl mx-auto mt-4">
+        <div className="flex flex-col gap-6 p-4 max-w-2xl mx-auto mt-4 pb-8">
           {shelves.map(shelf => (
             <div 
               key={shelf.index} 
-              className="relative w-full h-28 md:h-32 bg-[#5c3a21] rounded-lg shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-b-8 border-[#3e2415] flex items-end px-4"
+              className="relative w-full h-28 md:h-32 bg-[#5c3a21] rounded-lg shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-b-8 border-[#3e2415] flex items-end px-4 flex-shrink-0"
               style={{ perspective: '1000px' }}
             >
               {/* Shelf surface texture */}
@@ -251,10 +258,10 @@ export const Game: React.FC<GameProps> = ({ levelConfig, onGameOver, onPause }) 
         </div>
       </div>
 
-      {/* Fixed Tray at Bottom */}
-      <div className="absolute bottom-0 w-full p-4 pointer-events-none flex justify-center">
-         <div className="pointer-events-auto w-full max-w-lg">
-            <Tray items={tray} />
+      {/* Fixed Tray at Bottom using flex-none so it pushes game area up */}
+      <div className="flex-none w-full bg-[#4a1a1a] z-40 shadow-[0_-5px_15px_rgba(0,0,0,0.5)]">
+         <div className="w-full max-w-lg mx-auto p-2 pb-6">
+            <Tray items={tray} matchedType={matchedType} />
          </div>
       </div>
     </div>
